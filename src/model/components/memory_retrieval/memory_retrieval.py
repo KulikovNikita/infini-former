@@ -147,7 +147,7 @@ class TestMemoryRetrieval(unittest.TestCase):
         size = (kwargs["batch_size"], kwargs["seq_len"], kwargs["value_dim"])
         self.assertEqual(result.size(), size)
         
-    def test_sizes(self):
+    def test_determined_sizes(self):
         sizes: typing.List[typing.Mapping[str, int]] = [
             {"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 1},
             {"batch_size": 10, "seq_len": 1, "key_dim": 1, "value_dim": 1},
