@@ -7,7 +7,7 @@ import typing
 from src.model.utils.typing import FPTensor
 
 class BaseActivation(torch.nn.Module):
-    def __init__(self, bias: float = 0.0) -> None:
+    def __init__(self, bias: float) -> None:
         super().__init__()
 
         self.__bias = bias
@@ -50,3 +50,5 @@ ACTIVATION_LOOKUP: typing.Mapping[str, type] = {
 def make_activation(name: str, *args, **kwargs) -> BaseActivation:
     type_class = ACTIVATION_LOOKUP[name]
     return type_class(*args, **kwargs)
+
+DEFAULT_ACTIVATION: BaseActivation = ELU(bias = 1.0)

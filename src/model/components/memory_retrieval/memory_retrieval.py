@@ -7,11 +7,9 @@ import rootutils
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import FPTensor
-from src.model.utils.activations import BaseActivation, ELU
+from src.model.utils.activations import BaseActivation, DEFAULT_ACTIVATION
 
 from src.model.components.memory_state.memory_state import MemoryState
-
-DEFAULT_ACTIVATION: BaseActivation = ELU(bias = 1.0)
 
 class MemoryRetrieval(torch.nn.Module):
     def __init__(self, activation: BaseActivation = DEFAULT_ACTIVATION) -> None:
@@ -93,19 +91,28 @@ class MemoryRetrieval(torch.nn.Module):
         applied = retrieved / inverted_normalization[:, :, None]
 
         return applied
+    
+    def retrieve_activated(self, 
+                           state: MemoryState,
+                           activated: FPTensor) -> FPTensor:
+        MemoryRetrieval.__check_input(state, activated)
+        normalization = self.__normalize(state, activated)
+
+        retrieved = self.__retrieve(state, activated)
+
+        output = self.__apply_normalization(retrieved, normalization)
+
+        MemoryRetrieval.__check_output(state, activated, output)
+        return output
 
     def forward(self, 
                 state: MemoryState, 
                 queries: FPTensor) -> FPTensor:
         MemoryRetrieval.__check_input(state, queries)
 
-        activated_queries = self.__activate_queries(queries)
+        activated = self.__activate_queries(queries)
 
-        normalization = self.__normalize(state, activated_queries)
-
-        retrieved = self.__retrieve(state, activated_queries)
-
-        output = self.__apply_normalization(retrieved, normalization)
+        output = self.retrieve_activated(state, activated)
 
         MemoryRetrieval.__check_output(state, queries, output)
         return output
@@ -155,6 +162,7 @@ class TestMemoryRetrieval(unittest.TestCase):
             {"batch_size": 1, "seq_len": 1, "key_dim": 10, "value_dim": 1},
             {"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 10},
             {"batch_size": 9, "seq_len": 10, "key_dim": 11, "value_dim": 12},
+            {"batch_size": 99, "seq_len": 111, "key_dim": 127, "value_dim": 234},
         ]
 
         for s in sizes:
