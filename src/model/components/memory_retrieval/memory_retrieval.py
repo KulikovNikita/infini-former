@@ -49,12 +49,13 @@ class MemoryRetrieval(torch.nn.Module):
     
     def __normalize(self, state, activated_queries) -> FPTensor:
         queries_batch_size, queries_seq_len, _ = activated_queries.size()
-        print(state.normalization.size(), activated_queries.size())
+
         shaped_normalization = state.normalization[:, :, None]
         normalization = torch.matmul(activated_queries, shaped_normalization)
+        fixed_normalization = normalization.squeeze(-1)
 
-        assert normalization.size() == (queries_batch_size, queries_seq_len)
-        return normalization
+        assert fixed_normalization.size() == (queries_batch_size, queries_seq_len)
+        return fixed_normalization
     
     def __retrieve(self, state, activated_queries) -> FPTensor:
         _, queries_seq_len, _ = activated_queries.size()
@@ -66,7 +67,7 @@ class MemoryRetrieval(torch.nn.Module):
 
         return retrieved
     
-    def __find_delta(normalization) -> FPTensor:
+    def __find_delta(self, normalization) -> FPTensor:
         dtype = normalization.dtype
         delta = torch.finfo(dtype).tiny
         delta = torch.Tensor((delta,))
@@ -148,11 +149,11 @@ class TestMemoryRetrieval(unittest.TestCase):
         
     def test_sizes(self):
         sizes: typing.List[typing.Mapping[str, int]] = [
-            #{"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 1},
-            #{"batch_size": 10, "seq_len": 1, "key_dim": 1, "value_dim": 1},
-            #{"batch_size": 1, "seq_len": 10, "key_dim": 1, "value_dim": 1},
-            #{"batch_size": 1, "seq_len": 1, "key_dim": 10, "value_dim": 1},
-            #{"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 10},
+            {"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 1},
+            {"batch_size": 10, "seq_len": 1, "key_dim": 1, "value_dim": 1},
+            {"batch_size": 1, "seq_len": 10, "key_dim": 1, "value_dim": 1},
+            {"batch_size": 1, "seq_len": 1, "key_dim": 10, "value_dim": 1},
+            {"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 10},
             {"batch_size": 9, "seq_len": 10, "key_dim": 11, "value_dim": 12},
         ]
 
