@@ -23,22 +23,31 @@ class DeltaMemoryUpdate(BaseMemoryUpdate):
         return self.__retrieval
 
     def _update_memory(self, state, activated, values) -> FPTensor:
+        state_batch_size, state_key_dim, state_value_dim = state.size()
         retrieved = self.retrieval.retrieve_activated(state, activated)
 
         assert retrieved.size() == values.size()
 
-        print(retrieved.size(), activated.size(), activated.T.size())
+        activated_fixed = torch.permute(activated, (0, 2, 1))
 
-        memory_delta = torch.matmul(activated.T, retrieved + values)
+        memory_delta = torch.matmul(activated_fixed, retrieved + values)
 
         output = state.memory + memory_delta
 
         return output
 
     def _update_normalization(self, state, activated) -> FPTensor:
-        normalization_delta = torch.sum(activated, dim = -1)
+        state_batch_size, state_key_dim, _ = state.size()
+
+        activated_fixed = torch.permute(activated, (0, 2, 1))
+        normalization_delta = torch.sum(activated_fixed, dim = 2)
+
+        assert normalization_delta.size() == state.normalization.size()
+        assert normalization_delta.size() == (state_batch_size, state_key_dim)
 
         output = state.normalization + normalization_delta
+
+        assert output.size() == normalization_delta.size()
 
         return output
 
@@ -99,13 +108,13 @@ class TestDeltaMemoryUpdate(unittest.TestCase):
         
     def test_determined_sizes(self):
         sizes: typing.List[typing.Mapping[str, int]] = [
-            #{"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 1},
-            #{"batch_size": 10, "seq_len": 1, "key_dim": 1, "value_dim": 1},
-            #{"batch_size": 1, "seq_len": 10, "key_dim": 1, "value_dim": 1},
-            #{"batch_size": 1, "seq_len": 1, "key_dim": 10, "value_dim": 1},
-            #{"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 10},
+            {"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 1},
+            {"batch_size": 10, "seq_len": 1, "key_dim": 1, "value_dim": 1},
+            {"batch_size": 1, "seq_len": 10, "key_dim": 1, "value_dim": 1},
+            {"batch_size": 1, "seq_len": 1, "key_dim": 10, "value_dim": 1},
+            {"batch_size": 1, "seq_len": 1, "key_dim": 1, "value_dim": 10},
             {"batch_size": 9, "seq_len": 10, "key_dim": 11, "value_dim": 12},
-            #{"batch_size": 99, "seq_len": 111, "key_dim": 127, "value_dim": 234},
+            {"batch_size": 99, "seq_len": 111, "key_dim": 127, "value_dim": 234},
         ]
 
         for s in sizes:
