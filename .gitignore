@@ -1,0 +1,12 @@
+##
+# CPython miscellaneous folders & files
+##
+**/__pycache_/*
+*.pyc
+*.pyo
+
+##
+# Possible artifacts
+##
+*.logs
+*.log
