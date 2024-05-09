@@ -11,14 +11,12 @@ class TransformerBlock(torch.nn.Module):
                  feed_forward: BaseFeedForward,
                  head_count: int = 2,
                  key_dim: typing.Optional[int] = None,
-                 value_dim: typing.Optional[int] = None,
-                 batch_first: bool = True) -> None:
+                 value_dim: typing.Optional[int] = None) -> None:
     
         super().__init__()
     
         self.__query_dim = query_dim
         self.__head_count = head_count
-        self.__batch_first = batch_first
         self.__feed_forward = feed_forward
 
         self.__key_dim = value_or_default(key_dim, self.query_dim)

@@ -3,15 +3,19 @@ import abc
 import torch
 
 from src.model.utils.typing import FPTensor
-from src.model.utils.activations import BaseActivation, ELU
+from src.model.utils.builders import value_or_build
+
+from src.model.components.activation.base_activation import (
+    BaseActivation, MaybeActivationBuilder,
+)
 
 from src.model.components.memory_state.memory_state import MemoryState
 from src.model.components.memory_retrieval.memory_retrieval import MemoryRetrieval
 
 class BaseMemoryUpdate(torch.nn.Module):
-    def __init__(self, activation: BaseActivation) -> None:
+    def __init__(self, activation: MaybeActivationBuilder) -> None:
         super().__init__()
-        self.__activation = activation
+        self.__activation = value_or_build(activation)
 
     @property
     def activation(self) -> BaseActivation:

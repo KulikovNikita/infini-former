@@ -7,15 +7,17 @@ import rootutils
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import FPTensor
-from src.model.utils.activations import BaseActivation, DEFAULT_ACTIVATION
+from src.model.utils.builders import value_or_build
 
 from src.model.components.memory_state.memory_state import MemoryState
+from src.model.components.activation.activations import DEFAULT_ACTIVATION
+from src.model.components.activation.base_activation import BaseActivation, MaybeActivationBuilder
 
 class MemoryRetrieval(torch.nn.Module):
-    def __init__(self, activation: BaseActivation = DEFAULT_ACTIVATION) -> None:
+    def __init__(self, activation: MaybeActivationBuilder = DEFAULT_ACTIVATION) -> None:
         super().__init__()
 
-        self.__activation = activation
+        self.__activation = value_or_build(activation)
 
     @property
     def activation(self) -> BaseActivation:

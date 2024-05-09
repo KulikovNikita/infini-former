@@ -7,7 +7,7 @@ import rootutils
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import FPTensor
-from src.model.utils.activations import BaseActivation, DEFAULT_ACTIVATION
+from src.model.components.activation.activations import BaseActivation, DEFAULT_ACTIVATION
 
 from src.model.components.feed_forward.base_feed_forward import BaseFeedForward, BaseFeedForwardBuilder
 
