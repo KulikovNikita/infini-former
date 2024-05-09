@@ -1,19 +1,17 @@
 import torch
 import typing
 
-from src.model.utils.typing import value_or_default
+from src.model.utils.typing import value_or_default, FPTensor
 
 from src.model.components.feed_forward.base_feed_forward import BaseFeedForward
-
-T = typing.TypeVar('T')
 
 class TransformerBlock(torch.nn.Module):
     def __init__(self,
                  query_dim: int,
+                 feed_forward: BaseFeedForward,
                  head_count: int = 2,
                  key_dim: typing.Optional[int] = None,
                  value_dim: typing.Optional[int] = None,
-                 feed_forward: BaseFeedForward = ,
                  batch_first: bool = True) -> None:
     
         super().__init__()
@@ -34,7 +32,6 @@ class TransformerBlock(torch.nn.Module):
             vdim = self.value_dim,
             embed_dim = self.query_dim,
             num_heads = self.head_count,
-            batch_first = self.batch_first,
         )
     
     @property
@@ -56,3 +53,22 @@ class TransformerBlock(torch.nn.Module):
     @property
     def query_dim(self) -> int:
         return self.__query_dim
+    
+    @property
+    def head_count(self) -> int:
+        return self.__head_count
+    
+    @property
+    def batch_first(self) -> bool:
+        return self.__batch_first
+    
+    @property
+    def feed_forward(self) -> BaseFeedForward:
+        return self.__feed_forward
+    
+    @property
+    def attention(self) -> torch.nn.MultiHeadAttention:
+        return self.__attention
+
+    def forward(self, batch: FPTensor, mask: FPTensor) -> FPTensor:
+        pass
