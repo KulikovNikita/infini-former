@@ -54,13 +54,21 @@ class FeedForwardBlock(torch.nn.Module):
     def convolution_layer(self) -> torch.nn.Conv1d:
         return self.__convolution_layer
     
+    def convolve(self, sequences: FPTensor) -> FPTensor:
+        sequences_size = sequences.size()
+
+        sequences_t = torch.transpose(sequences, 1, 2)
+        convolved = self.convolution_layer(sequences_t)
+        convolved_t = torch.transpose(convolved, 1, 2)
+
+        assert convolved_t.size() == sequences_size
+        return convolved_t
+    
     def forward_wo_activation(self, sequences: FPTensor) -> FPTensor:
         sequences_size = sequences.size()
         
-        sequences_t = torch.transpose(sequences, 1, 2)
-        convolved = self.convolution_layer(sequences_t)
-        dropped_t = torch.transpose(convolved, 1, 2)
-        dropped_out = self.dropout_layer(dropped_t)
+        convolved = self.convolve(sequences)
+        dropped_out = self.dropout_layer(convolved)
 
         assert dropped_out.size() == sequences_size
         return dropped_out

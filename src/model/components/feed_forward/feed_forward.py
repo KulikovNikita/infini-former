@@ -123,8 +123,6 @@ class TestFeedForwardLayers(unittest.TestCase):
             block_count = kwargs["block_count"],
         ).build()
 
-
-        print(network)
         output = network(input)
 
         self.assertEqual(output.size(), input.size())
