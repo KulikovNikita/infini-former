@@ -1,102 +1,104 @@
-import abc
-
 import torch
+
+import typing
+import dataclasses
 
 import rootutils
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import FPTensor
-from src.model.components.activation.activations import BaseActivation, DEFAULT_ACTIVATION
+from src.model.utils.builders import value_or_build, BaseBuilder
 
+from src.model.components.activation.base_activation import MaybeActivationBuilder
+from src.model.components.activation.activations import (
+    BaseActivation, DEFAULT_ACTIVATION
+)
+from src.model.components.feed_forward.feed_forward_block import (
+    MaybeFFBlockBuilder, FeedForwardBlock, FeedForwardBlockBuilder
+)
 from src.model.components.feed_forward.base_feed_forward import BaseFeedForward, BaseFeedForwardBuilder
 
-class FeedForwardLayers(BaseFeedForward):
-    def __init__(self,
-                 hidden_size: int,
-                 layer_count: int = 2,
-                 dropout: float = 0.3,
-                 activation: BaseActivation = DEFAULT_ACTIVATION) -> None:
+class FeedForwardNetwork(BaseFeedForward):
+    ModuleList = torch.nn.ModuleList
+    RawList = typing.List[FeedForwardBlock]
+    MaybeBuilderList = typing.List[MaybeFFBlockBuilder]
 
-        layers = FeedForwardLayers.make_layers(
+    def __init__(self, blocks: MaybeBuilderList = []) -> None:
+                 
+        super().__init__()
+
+        self.__blocks = FeedForwardNetwork.__produce_module(blocks)
+
+    @property
+    def blocks(self) -> ModuleList:
+        return self.__blocks
+    
+    def __len__(self) -> int:
+        return len(self.blocks)
+    
+    @property
+    def block_count(self) -> int:
+        return len(self.blocks)
+
+    @staticmethod
+    def __produce_blocks(maybe_blocks: MaybeBuilderList) -> RawList:
+        return list(map(value_or_build, maybe_blocks))
+    
+    @staticmethod
+    def __produce_module(maybe_blocks: MaybeBuilderList) -> torch.nn.ModuleList:
+        blocks = FeedForwardNetwork.__produce_blocks(maybe_blocks)
+        return torch.nn.ModuleList(blocks)
+
+    def _forward(self, sequences: FPTensor) -> FPTensor:
+        forwarded = sequences.clone()
+        for block in self.blocks[:-1]:
+            forwarded = block(forwarded)
+        last_block = self.blocks[-1]
+        return last_block.forward_wo_activation(forwarded)
+
+class FeedForwardLayers(FeedForwardNetwork):
+    def __init__(self, 
+                 hidden_size: int,
+                 block_count: int = 1,
+                 dropout: float = 0.3,
+                 activation: MaybeActivationBuilder = DEFAULT_ACTIVATION) -> None:
+        builders = FeedForwardLayers.make_block_builders(
             dropout = dropout,
             activation = activation,
             hidden_size = hidden_size,
-            layer_count = layer_count,
+            block_count = block_count,
         )
 
-        super().__init__(layers = layers)
-
-        self.__dropout = dropout
-        self.__activation = activation
-        self.__hidden_size = hidden_size
-        self.__layer_count = layer_count
+        super().__init__(blocks = builders)
 
     @staticmethod
-    def make_layers(dropout: float,
-                    hidden_size: int,
-                    layer_count: int,
-                    activation: BaseActivation) -> torch.nn.ModuleList:
-        layers = list()
-        for _ in range(layer_count):
-            convolution_net = torch.nn.Conv1d(
-                kernel_size = 1,
-                in_channels = hidden_size,
-                out_channels = hidden_size,
-            )
-            dropout_net = torch.nn.Dropout(p = dropout)
-            layers.extend((convolution_net, dropout_net, activation))
+    def make_block_builders(hidden_size: int,
+                            block_count: int,
+                            dropout: float,
+                            activation: MaybeActivationBuilder,
+            ) -> typing.List[FeedForwardBlockBuilder]:
+        block_builder = FeedForwardBlockBuilder(
+            dropout = dropout,
+            activation = activation,
+            hidden_size = hidden_size,
+        )
 
-        result = torch.nn.ModuleList(layers[:-1])
-        assert len(result) == (3 * layer_count - 1)
-        return result
+        return [block_builder] * block_count
     
-    @property
-    def dropout(self) -> float:
-        return self.__dropout
-    
-    @property
-    def hidden_size(self) -> int:
-        return self.__hidden_size
-    
-    @property
-    def activation(self) -> BaseActivation:
-        return self.__activation
-    
-    @property
-    def layer_count(self) -> int:
-        result = super().layer_count
-        assert self.__layer_count == result
-        return result
-    
-    def _forward(self, input: FPTensor) -> FPTensor:
-        _, _, input_dim = input.size()
-        assert input_dim == self.hidden_size
-        input_fixed = input.permute(0, 2, 1)
-        output = input_fixed
-        for layer in self.layers:
-            output = layer(output)
-        output_fixed = output.permute(0, 2, 1)
-        assert output_fixed.size() == input.size()
-        return output_fixed
-    
-class FeedForwardLayersBuilder(BaseFeedForwardBuilder):
-    def __init__(self, 
-                 hidden_size: int,
-                 layer_count: int = 2,
-                 dropout: float = 0.3,
-                 activation: BaseActivation = DEFAULT_ACTIVATION) -> None:
-        self.dropout = dropout
-        self.activation = activation
-        self.hidden_size = hidden_size
-        self.layer_count = layer_count
-    
+@dataclasses.dataclass
+class FeedForwardLayersBuilder(BaseBuilder[FeedForwardLayers]):
+    hidden_size: int
+    block_count: int = 1
+    dropout: float = 0.3
+    activation: MaybeActivationBuilder = DEFAULT_ACTIVATION
+
     def build(self) -> FeedForwardLayers:
         return FeedForwardLayers(
             dropout = self.dropout,
             activation = self.activation,
-            layer_count = self.layer_count,
             hidden_size = self.hidden_size,
+            block_count = self.block_count,
         )
 
 import logging
@@ -118,21 +120,24 @@ class TestFeedForwardLayers(unittest.TestCase):
 
         network = FeedForwardLayersBuilder(
             hidden_size = kwargs["hidden_size"],
-            layer_count = kwargs["layer_count"],
+            block_count = kwargs["block_count"],
         ).build()
+
+
+        print(network)
         output = network(input)
 
         self.assertEqual(output.size(), input.size())
         
     def test_determined_sizes(self):
         sizes: typing.List[typing.Mapping[str, int]] = [
-            {"batch_size": 1, "seq_len": 1, "hidden_size": 1, "layer_count": 1},
-            {"batch_size": 10, "seq_len": 1, "hidden_size": 1, "layer_count": 1},
-            {"batch_size": 1, "seq_len": 10, "hidden_size": 1, "layer_count": 1},
-            {"batch_size": 1, "seq_len": 1, "hidden_size": 10, "layer_count": 1},
-            {"batch_size": 1, "seq_len": 1, "hidden_size": 1, "layer_count": 10},
-            {"batch_size": 9, "seq_len": 10, "hidden_size": 11, "layer_count": 12},
-            {"batch_size": 99, "seq_len": 111, "hidden_size": 127, "layer_count": 23},
+            {"batch_size": 1, "seq_len": 1, "hidden_size": 1, "block_count": 1},
+            {"batch_size": 10, "seq_len": 1, "hidden_size": 1, "block_count": 1},
+            {"batch_size": 1, "seq_len": 10, "hidden_size": 1, "block_count": 1},
+            {"batch_size": 1, "seq_len": 1, "hidden_size": 10, "block_count": 1},
+            {"batch_size": 1, "seq_len": 1, "hidden_size": 1, "block_count": 10},
+            {"batch_size": 9, "seq_len": 10, "hidden_size": 11, "block_count": 12},
+            {"batch_size": 99, "seq_len": 111, "hidden_size": 127, "block_count": 23},
         ]
 
         for s in sizes:

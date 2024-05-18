@@ -9,17 +9,8 @@ rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.model.utils.typing import FPTensor
 
 class BaseFeedForward(torch.nn.Module):
-    def __init__(self, layers: torch.nn.ModuleList) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.__layers = layers
-
-    @property
-    def layer_count(self) -> int:
-        return len(self.layers)
-
-    @property
-    def layers(self) -> torch.nn.ModuleList:
-        return self.__layers
     
     @abc.abstractmethod
     def _forward(self, input: FPTensor) -> FPTensor:
