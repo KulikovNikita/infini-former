@@ -3,7 +3,7 @@ import abc
 import torch
 
 from src.model.utils.typing import FPTensor
-from src.model.utils.builders import value_or_build
+from src.model.utils.builders import value_or_build, MaybeBuilder
 
 from src.model.components.activation.base_activation import (
     BaseActivation, MaybeActivationBuilder,
@@ -40,3 +40,5 @@ class BaseMemoryUpdate(torch.nn.Module):
 
         BaseMemoryUpdate.__check_output(state, keys, values, output)
         return output
+    
+MaybeMemoryUpdateBuilder = MaybeBuilder[BaseMemoryUpdate]

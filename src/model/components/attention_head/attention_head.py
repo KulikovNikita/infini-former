@@ -1,12 +1,14 @@
 import torch
-
 import typing
+
+import dataclasses
 
 import rootutils
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import value_or_default, FPTensor
+from src.model.utils.builders import MaybeBuilder, BaseBuilder
 
 from src.model.components.adapter.base_adapter import MaybeAdapterBuilder
 from src.model.components.attention_head.base_attention import BaseAttention
@@ -44,10 +46,7 @@ class AttentionHead(BaseAttention):
         assert w_q_count == m_q_count
         assert w_k_count == m_k_count
 
-    def forward(self, queries, keys, values, mask: MaybeMask = None) -> FPTensor:
-        self._validate_input(queries, keys, values)
-
-        q, k, v = self._prepare_input(queries, keys, values)
+    def forward_prepared(self, q, k, v, mask: MaybeMask = None) -> FPTensor:
         qk_coefficient = torch.Tensor((1.0 / self.common_dim,))
         qk_coefficient = torch.sqrt(qk_coefficient).to(q.device)
 
@@ -59,6 +58,30 @@ class AttentionHead(BaseAttention):
 
         self._validate_output(v, result)
         return result
+
+    def forward(self, queries, keys, values, mask: MaybeMask = None) -> FPTensor:
+        self._validate_input(queries, keys, values)
+
+        q, k, v = self._prepare_input(queries, keys, values)
+        result = self.forward_prepared(q, k, v, mask)
+
+        self._validate_output(v, result)
+        return result
+    
+@dataclasses.dataclass
+class AttentionHeadBuilder(BaseBuilder[BaseAttention]):
+    query_adapter: MaybeAdapterBuilder
+    key_adapter: MaybeAdapterBuilder
+    value_adapter: MaybeAdapterBuilder
+
+    def build(self) -> BaseAttention:
+        return AttentionHead(
+            query_adapter = self.query_adapter,
+            key_adapter = self.key_adapter,
+            value_adapter = self.value_adapter
+        )
+    
+MaybeAttentionHeadBuilder = MaybeBuilder[AttentionHead]
     
 class DefaultAttentionHead(AttentionHead):
     def __init__(self, 

@@ -1,12 +1,14 @@
 import torch
 
 import typing
+import dataclasses
 
 import rootutils
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import FPTensor
+from src.model.utils.builders import BaseBuilder
 
 from src.model.components.activation.activations import DEFAULT_ACTIVATION
 from src.model.components.activation.base_activation import MaybeActivationBuilder
@@ -62,6 +64,17 @@ class DeltaMemoryUpdate(BaseMemoryUpdate):
         output = MemoryState(updated_memory, updated_normalization)
 
         return output
+    
+@dataclasses.dataclass
+class DeltaMemoryUpdateBuilder(BaseBuilder[DeltaMemoryUpdate]):
+    activation: MaybeActivationBuilder = DEFAULT_ACTIVATION
+
+    def build(self) -> BaseMemoryUpdate:
+        return DeltaMemoryUpdate(
+            activation = self.activation,
+        )
+    
+DEFAULT_MEMORY_UPDATE: DeltaMemoryUpdate = DeltaMemoryUpdate()
 
 import unittest
 

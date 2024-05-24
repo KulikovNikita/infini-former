@@ -1,0 +1,17 @@
+key_adapter_builder:
+  _target_: src.model.component.adapters.LinearAdapterBuilder
+  question_dim: ${model.key_dim}
+  common_dim: ${model.key_dim}
+  dropout: 0.3
+
+query_adapter_builder:
+  _target_: src.model.component.adapters.LinearAdapterBuilder
+  question_dim: ${model.query_dim}
+  common_dim: ${model.query_dim}
+  dropout: 0.3
+
+value_adapter_builder:
+  _target_: src.model.component.adapters.LinearAdapterBuilder
+  question_dim: ${model.value_dim}
+  common_dim: ${model.value_dim}
+  dropout: 0.3

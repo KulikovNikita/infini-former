@@ -44,6 +44,6 @@ class MemoryState:
     def size(self, *args, **kwargs) -> typing.Any:
         return self.memory.size(*args, **kwargs)
     
-    def __iter__(self) -> FPTensor:
+    def __iter__(self):
         yield self.memory
         yield self.normalization

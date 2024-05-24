@@ -1,13 +1,14 @@
 import torch
 
 import typing
+import dataclasses
 
 import rootutils
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import FPTensor
-from src.model.utils.builders import value_or_build
+from src.model.utils.builders import value_or_build, BaseBuilder, MaybeBuilder
 
 from src.model.components.memory_state.memory_state import MemoryState
 from src.model.components.activation.activations import DEFAULT_ACTIVATION
@@ -118,6 +119,19 @@ class MemoryRetrieval(torch.nn.Module):
 
         MemoryRetrieval.__check_output(state, queries, output)
         return output
+    
+@dataclasses.dataclass
+class MemoryRetrievalBuilder(BaseBuilder[MemoryRetrieval]):
+    activation: MaybeActivationBuilder = DEFAULT_ACTIVATION
+
+    def build(self) -> MemoryRetrieval:
+        return MemoryRetrieval(
+            activation = self.activation,
+        )
+    
+MaybeMemoryRetrievalBuilder = MaybeBuilder[MemoryRetrieval]
+
+DEFAULT_MEMORY_RETRIEVAL: MemoryRetrieval = MemoryRetrieval()
 
 import unittest
 

@@ -1,0 +1,2 @@
+attention_head_builder:
+  _target_: src.model.components

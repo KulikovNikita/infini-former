@@ -1,11 +1,14 @@
 import torch
 import typing
 
+import dataclasses
+
 import rootutils
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import FPTensor
+from src.model.utils.builders import BaseBuilder, MaybeBuilder
 
 from src.model.components.adapter.base_adapter import BaseAdapter
 
@@ -39,6 +42,19 @@ class LinearAdapter(BaseAdapter):
     def _forward(self, sequences: FPTensor) -> FPTensor:
         transformed = self.linear(sequences)
         return self.dropout(transformed)
+    
+@dataclasses.dataclass
+class LinearAdapterBuilder(BaseBuilder[BaseAdapter]):
+    question_dim: int
+    common_dim: typing.Optional[int] = None
+    dropout: float = 0.0
+
+    def build(self) -> BaseAdapter:
+        return LinearAdapter(
+            question_dim = self.question_dim,
+            common_dim = self.common_dim,
+            dropout = self.dropout,
+        )
     
 import logging
 import unittest
