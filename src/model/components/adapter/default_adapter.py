@@ -1,11 +1,14 @@
 import torch
 import typing
 
+import dataclasses
+
 import rootutils
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import FPTensor
+from src.model.utils.builders import BaseBuilder
 
 from src.model.components.adapter.base_adapter import BaseAdapter
 from src.model.components.adapter.linear_adapter import LinearAdapter
@@ -41,6 +44,18 @@ class DefaultAdapter(BaseAdapter):
             common_dim = self.common_dim,
             question_dim = self.question_dim, 
         )
+    
+@dataclasses.dataclass
+class DefaultAdapterBuilder(BaseBuilder[DefaultAdapter]):
+    question_dim: int
+    common_dim: typing.Optional[int] = None
+
+    def build(self) -> DefaultAdapter:
+        return DefaultAdapter(
+            common_dim = self.common_dim,
+            question_dim = self.question_dim,
+        )
+
     
 import logging
 import unittest

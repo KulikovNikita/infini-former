@@ -4,6 +4,7 @@ import typing
 import torch
 
 from src.model.utils.typing import value_or_default, FPTensor
+from src.model.utils.builders import BaseBuilder, MaybeBuilder
 
 class BaseAdapter(torch.nn.Module):
     def __init__(self, 
@@ -16,6 +17,7 @@ class BaseAdapter(torch.nn.Module):
     @property
     def common_dim(self) -> int:
         return self.__common_dim
+
     @property
     def question_dim(self) -> int:
         return self.__question_dim
@@ -37,3 +39,7 @@ class BaseAdapter(torch.nn.Module):
         result = self._forward(sequences)
         self.__check_output(sequences, result)
         return result
+    
+AdapterBuilder = BaseBuilder[BaseAdapter]
+MaybeAdapter = typing.Optional[BaseAdapter]
+MaybeAdapterBuilder = MaybeBuilder[BaseAdapter]

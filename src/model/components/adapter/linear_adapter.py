@@ -12,13 +12,15 @@ from src.model.components.adapter.base_adapter import BaseAdapter
 class LinearAdapter(BaseAdapter):
     def __init__(self,
                  question_dim: int, 
-                 common_dim: typing.Optional[int] = None) -> None:
+                 common_dim: typing.Optional[int] = None,
+                 dropout: float = 0.0) -> None:
         super().__init__(
             common_dim = common_dim,
             question_dim = question_dim,
         )
 
         self.__linear = self.__make_linear()
+        self.__dropout = torch.nn.Dropout(dropout)
 
     def __make_linear(self) -> torch.nn.Linear:
         return torch.nn.Linear(
@@ -29,9 +31,14 @@ class LinearAdapter(BaseAdapter):
     @property
     def linear(self) -> torch.nn.Linear:
         return self.__linear 
+    
+    @property
+    def dropout(self) -> torch.nn.Dropout:
+        return self.__dropout
 
     def _forward(self, sequences: FPTensor) -> FPTensor:
-        return self.linear(sequences)
+        transformed = self.linear(sequences)
+        return self.dropout(transformed)
     
 import logging
 import unittest
