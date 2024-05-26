@@ -6,10 +6,15 @@ rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.builders import BaseBuilder, MaybeBuilder
 
-from src.model.infini_former.transformer_network import TransformerNetwork
+from src.model.components.formers.transformer_network import TransformerNetwork
 
 from src.model.components.mha_adapter.mha_adapter import MaybeMHAAdapterBuilder
 from src.model.components.feed_forward.base_feed_forward import MaybeFeedForwardBuilder
+
+from src.model.components.masking.attention_masking import (
+    AttentionMasking, MaybeAttentionMaskingBuilder, DEFAULT_ATTENTION_MASKING,
+)
+
 from src.model.components.former_block.transformer_block import (
     TransformerBlockBuilder, MaybeTransformerBlockBuilder,
 )
@@ -18,14 +23,18 @@ class TransformerLayers(TransformerNetwork):
     def __init__(self,
                  multiheadattention: MaybeMHAAdapterBuilder,
                  feedforwardnetwork: MaybeFeedForwardBuilder,
-                 block_count: int = 1) -> None:
+                 attention_masking: MaybeAttentionMaskingBuilder = DEFAULT_ATTENTION_MASKING,
+                 block_count: int = 1,) -> None:
         blocks = TransformerLayers.make_block_builders(
             multiheadattention = multiheadattention,
             feedforwardnetwork = feedforwardnetwork,
             block_count = block_count,
         )
 
-        super().__init__(blocks = blocks)
+        super().__init__(
+            attention_masking = attention_masking,
+            blocks = blocks,
+        )
 
 
     @staticmethod
@@ -87,14 +96,13 @@ class TestTransformerLayers(unittest.TestCase):
         gen = self.make_generator(**kwargs)
         batch = self.make_batch(gen, **kwargs)
         block = self.make_transformerlayers(**kwargs)
-        print(block)
+
         result = block(batch)
         
         self.assertEqual(result.size(), batch.size())
 
     def test_sizes(self) -> None:
         for sizes in self.get_sizes():
-            print(sizes)
             self.check_sizes(**sizes)
 
     def get_sizes(self) -> typing.List[typing.Dict[str, int]]:

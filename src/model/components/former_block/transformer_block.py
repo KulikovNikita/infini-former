@@ -14,7 +14,8 @@ from src.model.components.mha_adapter.mha_adapter import MHAAdapter, MaybeMHAAda
 from src.model.components.feed_forward.base_feed_forward import BaseFeedForward, MaybeFeedForwardBuilder
 
 class TransformerBlock(torch.nn.Module):
-    MaybeMask = typing.Optional[FPTensor]
+    MaybeAttentionMask = typing.Optional[FPTensor]
+    MaybePaddingMask = typing.Optional[torch.BoolTensor]
 
     def __init__(self, 
                  multiheadattention: MaybeMHAAdapterBuilder, 
@@ -52,14 +53,34 @@ class TransformerBlock(torch.nn.Module):
         output_size = output.size()
         assert output_size == input_size
         return output
+    
+    def __validate_padding(self, size, padding) -> None:
+        if padding is not None:
+            assert padding.size() == size[:-1]
 
-    def forward(self, input: FPTensor, attn_mask: MaybeMask = None) -> FPTensor:
+    def __validate_mask(self, size, mask) -> None:
+        if mask is not None:
+            bs, sl, _ = size
+            if mask.dim() == 2:
+                assert mask.size() == (sl, sl)
+            elif mask.dim() == 2:
+                assert mask.size() == (bs, sl, sl)
+            else:
+                raise ValueError("Invalid mask dimensionality")
+
+    def forward(self, input: FPTensor, 
+                attn_mask: MaybeAttentionMask = None,
+                padd_mask: MaybePaddingMask = None,) -> FPTensor:
         input_size = input.size()
         assert len(input_size) == 3
+
+        self.__validate_mask(input_size, attn_mask)
+        self.__validate_padding(input_size, padd_mask)
 
         normed = self.apply_layernorm(input)
 
         attention, _ = self.multiheadattention(
+            key_padding_mask = padd_mask,
             queries = normed, values = normed,
             keys = normed, attn_mask = attn_mask,
         )

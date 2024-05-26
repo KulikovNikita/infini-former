@@ -2,6 +2,12 @@ import torch
 
 import typing
 
+import rootutils
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+
+from src.model.utils.builders import MaybeBuilder, BaseBuilder
+
 class AttentionMasking(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -13,6 +19,14 @@ class AttentionMasking(torch.nn.Module):
         result = ~torch.tril(ones, diagonal = -1)
         assert result.size() == ones_size
         return result
+
+class AttentionMaskingBuilder(BaseBuilder[AttentionMasking]):
+    def build(self) -> AttentionMasking:
+        return AttentionMasking()
+    
+MaybeAttentionMaskingBuilder = MaybeBuilder[AttentionMasking]
+
+DEFAULT_ATTENTION_MASKING: AttentionMasking = AttentionMasking()
 
 import logging
 import unittest

@@ -6,22 +6,20 @@ from src.model.utils.typing import IndexTensor, FPTensor
     
 class LogPositional(torch.nn.Module):
     def __init__(self, digits: int, base: float = 2.0,
-                 dtype: torch.dtype = torch.float32,
-                 device: typing.Optional[torch.device] = None) -> None:
+                 dtype: torch.dtype = torch.float32,) -> None:
         super().__init__()
 
         self.__base = base
         self.__dtype = dtype
         self.__digits = digits
-        self.__device = device
 
         self.__powers = LogPositional.__make_powers(
             digits = digits, base = base, 
-            dtype = dtype, device = device
+            dtype = dtype
         )
     
     @staticmethod
-    def __make_powers(digits, base, dtype, device) -> FPTensor:
+    def __make_powers(digits, base, dtype) -> FPTensor:
         digits_range = torch.arange(0, digits, dtype = torch.int32)
 
         if base == 2.0:
@@ -29,7 +27,7 @@ class LogPositional(torch.nn.Module):
         else:
             base_tensor = torch.Tensor(base, dtype = dtype)
             powers = torch.pow(base_tensor, digits_range)
-        powers = powers.to(dtype).to(device)
+        powers = powers.to(dtype)
 
         assert len(powers) == digits
         assert powers.dtype == dtype
@@ -47,11 +45,8 @@ class LogPositional(torch.nn.Module):
     
     @property
     def dtype(self) -> torch.dtype:
-        return self.__dtype
-    
-    @property
-    def device(self) -> typing.Optional[torch.device]:
-        return self.__device
+        return self.__dtype    
+
 
     def forward(self, positions: IndexTensor) -> FPTensor:
         powered = positions.unsqueeze(-1) * self.__powers
