@@ -28,6 +28,7 @@ class FeedForwardNetwork(BaseFeedForward):
     def __len__(self) -> int:
         return len(self.blocks)
     
+    @property
     def input_size(self) -> int:
         return self.__input_size
     

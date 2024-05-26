@@ -64,21 +64,21 @@ class MHAAdapter(torch.nn.Module):
     def add_bias_key_value(self) -> bool:
         return self.__add_bias_key_value
 
-    def __make_implementation(self) -> torch.nn.MultiHeadAttention:
-        return torch.nn.MuliHeadAttention(
+    def __make_implementation(self) -> torch.nn.MultiheadAttention:
+        return torch.nn.MultiheadAttention(
             embed_dim = self.query_dim,
             num_heads = self.head_count,
             bias = self.bias,
             dropout = self.dropout,
             kdim = self.key_dim,
             vdim = self.value_dim,
-            add_zero_attention = self.add_zero_attention,
-            add_bias_key_value = self.add_bias_key_value,
+            add_zero_attn = self.add_zero_attention,
+            add_bias_kv = self.add_bias_key_value,
             batch_first = True, # Internal agreement
         )
 
     @property
-    def implementation(self) -> torch.nn.MultiHeaadAttention:
+    def implementation(self) -> torch.nn.MultiheadAttention:
         return self.__implementation
     
     def __validate_input(self, queries, keys, values) -> None:

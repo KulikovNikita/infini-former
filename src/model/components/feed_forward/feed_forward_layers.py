@@ -77,10 +77,10 @@ class TestFeedForwardLayers(unittest.TestCase):
         gen = self._make_generator(seed = seed)
         input = self._dummy_batch(gen, **kwargs)
 
-        network = FeedForwardLayersBuilder(
+        network = FeedForwardLayers(
             hidden_size = kwargs["hidden_size"],
             block_count = kwargs["block_count"],
-        ).build()
+        )
 
         output = network(input)
 
