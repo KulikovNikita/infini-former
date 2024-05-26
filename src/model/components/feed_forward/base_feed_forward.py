@@ -2,15 +2,17 @@ import abc
 
 import torch
 
-import rootutils
-
-rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-
 from src.model.utils.typing import FPTensor
+from src.model.utils.builders import MaybeBuilder
 
 class BaseFeedForward(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
+
+    @property
+    @abc.abstractmethod
+    def input_size(self) -> int:
+        pass
     
     @abc.abstractmethod
     def _forward(self, input: FPTensor) -> FPTensor:
@@ -21,8 +23,5 @@ class BaseFeedForward(torch.nn.Module):
         output = self._forward(input)
         assert output.size() == input_size
         return (output + input)
-    
-class BaseFeedForwardBuilder:
-    @abc.abstractmethod
-    def build(self) -> BaseFeedForward:
-        pass
+
+MaybeFeedForwardBuilder = MaybeBuilder[BaseFeedForward]

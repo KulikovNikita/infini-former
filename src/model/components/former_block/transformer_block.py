@@ -1,72 +1,92 @@
 import torch
 import typing
 
-from src.model.utils.typing import value_or_default, FPTensor
+import dataclasses
 
-from src.model.components.feed_forward.base_feed_forward import BaseFeedForward
+from src.model.utils.typing import FPTensor
+from src.model.utils.builders import value_or_build, BaseBuilder, MaybeBuilder
+
+from src.model.components.mha_adapter.mha_adapter import MHAAdapter, MaybeMHAAdapterBuilder
+from src.model.components.feed_forward.base_feed_forward import BaseFeedForward, MaybeFeedForwardBuilder
 
 class TransformerBlock(torch.nn.Module):
-    def __init__(self,
-                 query_dim: int,
-                 feed_forward: BaseFeedForward,
-                 head_count: int = 2,
-                 key_dim: typing.Optional[int] = None,
-                 value_dim: typing.Optional[int] = None) -> None:
-    
-        super().__init__()
-    
-        self.__query_dim = query_dim
-        self.__head_count = head_count
-        self.__feed_forward = feed_forward
+    MaybeMask = typing.Optional[FPTensor]
 
-        self.__key_dim = value_or_default(key_dim, self.query_dim)
-        self.__value_dim = value_or_default(value_dim, self.value_dim)
+    def __init__(self, 
+                 multiheadattention: MaybeMHAAdapterBuilder, 
+                 feedforwardnetwork: MaybeFeedForwardBuilder) -> None:
+        super().__init__()
+
+        self.__multiheadattention = value_or_build(multiheadattention)
+        self.__feedforwardnetwork = value_or_build(feedforwardnetwork)
+
+        input_size = self.feedforwardnetwork.input_size
+        self.__layernorm = torch.nn.LayerNorm(input_size)
+
+        assert input_size == self.multiheadattention.key_dim
+        assert input_size == self.multiheadattention.query_dim
+        assert input_size == self.multiheadattention.value_dim
         
-        self.__attention = self.__make_attention()
+    @property
+    def multiheadattention(self) -> MHAAdapter:
+        return self.__multiheadattention
     
-    def __make_attention(self) -> torch.nn.MultiHeadAtention:
-        return torch.nn.MultiHeadAttention(
-            kdim = self.key_dim,
-            vdim = self.value_dim,
-            embed_dim = self.query_dim,
-            num_heads = self.head_count,
+    @property
+    def feedforwardnetwork(self) -> BaseFeedForward:
+        return self.__feedforwardnetwork
+
+    @property
+    def layernorm(self) -> torch.nn.LayerNorm:
+        return self.__layernorm
+    
+    def apply_layernorm(self, input: FPTensor) -> FPTensor:
+        input_size = input.size()
+        assert len(input_size) == 3
+
+        output = self.layernorm(input)
+
+        output_size = output.size()
+        assert output_size == input_size
+        return output
+
+    def forward(self, input: FPTensor, attn_mask: MaybeMask = None) -> FPTensor:
+        input_size = input.size()
+        assert len(input_size) == 3
+
+        normed = self.apply_layernorm(input)
+
+        attention, _ = self.multiheadattention(
+            queries = normed, values = normed,
+            keys = normed, attn_mask = attn_mask,
+        )
+
+        assert attention.size() == input_size
+        output = self.feedforwardnetwork(input + attention)
+
+        output_size = output.size()
+        assert output_size == input_size
+        return output
+    
+@dataclasses.dataclass
+class TransformerBlockBuilder(BaseBuilder[TransformerBlock]):
+    multiheadattention: MaybeMHAAdapterBuilder
+    feedforwardnetwork: MaybeFeedForwardBuilder
+
+    def build(self) -> TransformerBlock:
+        return TransformerBlock(
+            multiheadattention = self.multiheadattention,
+            feedforwardnetwork = self.feedforwardnetwork,
         )
     
-    @property
-    def __batch_dim(self) -> int:
-        return 0 if self.batch_first else 1
-    
-    @property
-    def __sequence_dim(self) -> int:
-        return 1 if self.batch_first else 0
-    
-    @property
-    def key_dim(self) -> int:
-        return self.__key_dim
-    
-    @property
-    def value_dim(self) -> int:
-        return self.__value_dim
-    
-    @property
-    def query_dim(self) -> int:
-        return self.__query_dim
-    
-    @property
-    def head_count(self) -> int:
-        return self.__head_count
-    
-    @property
-    def batch_first(self) -> bool:
-        return self.__batch_first
-    
-    @property
-    def feed_forward(self) -> BaseFeedForward:
-        return self.__feed_forward
-    
-    @property
-    def attention(self) -> torch.nn.MultiHeadAttention:
-        return self.__attention
+MaybeTransformerBlockBuilder = MaybeBuilder[TransformerBlock]
 
-    def forward(self, batch: FPTensor, mask: FPTensor) -> FPTensor:
-        pass
+import logging
+import unittest
+
+log = logging.getLogger(__name__)
+
+class TestTransformerBlock(unittest.TestCase):
+    def make_
+
+if __name__ == "__main__":
+    unittest.main()

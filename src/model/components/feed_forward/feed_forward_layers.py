@@ -7,55 +7,14 @@ import rootutils
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
-from src.model.utils.typing import FPTensor
-from src.model.utils.builders import value_or_build, BaseBuilder
+from src.model.utils.builders import BaseBuilder
 
+from src.model.components.activation.activations import DEFAULT_ACTIVATION
 from src.model.components.activation.base_activation import MaybeActivationBuilder
-from src.model.components.activation.activations import (
-    BaseActivation, DEFAULT_ACTIVATION
-)
-from src.model.components.feed_forward.feed_forward_block import (
-    MaybeFFBlockBuilder, FeedForwardBlock, FeedForwardBlockBuilder
-)
-from src.model.components.feed_forward.base_feed_forward import BaseFeedForward, BaseFeedForwardBuilder
 
-class FeedForwardNetwork(BaseFeedForward):
-    ModuleList = torch.nn.ModuleList
-    RawList = typing.List[FeedForwardBlock]
-    MaybeBuilderList = typing.List[MaybeFFBlockBuilder]
-
-    def __init__(self, blocks: MaybeBuilderList = []) -> None:
-                 
-        super().__init__()
-
-        self.__blocks = FeedForwardNetwork.__produce_module(blocks)
-
-    @property
-    def blocks(self) -> ModuleList:
-        return self.__blocks
-    
-    def __len__(self) -> int:
-        return len(self.blocks)
-    
-    @property
-    def block_count(self) -> int:
-        return len(self.blocks)
-
-    @staticmethod
-    def __produce_blocks(maybe_blocks: MaybeBuilderList) -> RawList:
-        return list(map(value_or_build, maybe_blocks))
-    
-    @staticmethod
-    def __produce_module(maybe_blocks: MaybeBuilderList) -> torch.nn.ModuleList:
-        blocks = FeedForwardNetwork.__produce_blocks(maybe_blocks)
-        return torch.nn.ModuleList(blocks)
-
-    def _forward(self, sequences: FPTensor) -> FPTensor:
-        forwarded = sequences.clone()
-        for block in self.blocks[:-1]:
-            forwarded = block(forwarded)
-        last_block = self.blocks[-1]
-        return last_block.forward_wo_activation(forwarded)
+from src.model.components.feed_forward.base_feed_forward import BaseFeedForward
+from src.model.components.feed_forward.feed_forward_network import FeedForwardNetwork
+from src.model.components.feed_forward.feed_forward_block import FeedForwardBlockBuilder
 
 class FeedForwardLayers(FeedForwardNetwork):
     def __init__(self, 
@@ -87,13 +46,13 @@ class FeedForwardLayers(FeedForwardNetwork):
         return [block_builder] * block_count
     
 @dataclasses.dataclass
-class FeedForwardLayersBuilder(BaseBuilder[FeedForwardLayers]):
+class FeedForwardLayersBuilder(BaseBuilder[BaseFeedForward]):
     hidden_size: int
     block_count: int = 1
     dropout: float = 0.3
     activation: MaybeActivationBuilder = DEFAULT_ACTIVATION
 
-    def build(self) -> FeedForwardLayers:
+    def build(self) -> BaseFeedForward:
         return FeedForwardLayers(
             dropout = self.dropout,
             activation = self.activation,
