@@ -39,6 +39,15 @@ class TokenEmbedding(BaseEmbedding):
     def _forward(self, batch: Batch, offset: int) -> FPTensor:
         tokens: IndexTensor = batch[self.feature_name]
         return self.implementation(tokens)
+    
+    def get_logits(self, sequences: FPTensor) -> FPTensor:
+        sequences_size: tuple = sequences.size()
+        assert sequences_size[-1] == self.embedding_dim
+        weights: FPTensor = self.implementation.weight
+        weights_tiled = torch.tile()
+
+        
+    def decode()
 
 class TokenEmbeddingBuilder(BaseBuilder[BaseEmbedding]):
     feature_name: str
