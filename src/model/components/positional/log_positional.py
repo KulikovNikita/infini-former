@@ -47,7 +47,6 @@ class LogPositional(torch.nn.Module):
     def dtype(self) -> torch.dtype:
         return self.__dtype    
 
-
     def forward(self, positions: IndexTensor) -> FPTensor:
         powered = positions.unsqueeze(-1) * self.__powers
         result = torch.special.expit(powered)

@@ -29,7 +29,7 @@ class BaseEmbedding(torch.nn.Module):
 
     def forward(self, batch: Batch, offset: int = 0) -> FPTensor:
         output: FPTensor = self._forward(batch, offset)
-        self.__validate_output(output, offset)
+        self.__validate_output(output)
         return output
 
 MaybeEmbeddingBuilder = MaybeBuilder[BaseEmbedding]
