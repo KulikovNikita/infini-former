@@ -2,7 +2,10 @@ import torch
 
 import typing
 
+import dataclasses
+
 from src.model.utils.typing import IndexTensor, FPTensor
+from src.model.utils.builders import BaseBuilder, MaybeBuilder
     
 class LogPositional(torch.nn.Module):
     def __init__(self, digits: int, base: float = 2.0,
@@ -56,6 +59,21 @@ class LogPositional(torch.nn.Module):
         assert result.dtype == self.dtype
 
         return result
+    
+@dataclasses.dataclass
+class LogPositionalBuilder(BaseBuilder[LogPositional]):
+    digits: int
+    base: float = 2.0
+    dtype: torch.dtype = torch.float32
+
+    def build(self) -> LogPositional:
+        return LogPositional(
+            digits = self.digits,
+            dtype = self.dtype,
+            base = self.base,
+        )
+    
+MaybeLogPositionalBuilder = MaybeBuilder[LogPositional]
 
 import unittest
 
