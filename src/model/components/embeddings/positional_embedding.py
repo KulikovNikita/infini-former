@@ -2,6 +2,8 @@ import torch
 
 import typing
 
+import dataclasses
+
 from src.model.utils.typing import FPTensor, IndexTensor
 from src.model.utils.builders import value_or_build, BaseBuilder
 
@@ -45,3 +47,13 @@ class LogPositionalEmbedding(BaseEmbedding):
         self.__validate_output(result)
         return result
 
+@dataclasses.dataclass
+class LogPositionalEmbeddingBuilder(BaseBuilder[BaseEmbedding]):
+    feature_name: str
+    log_positional: MaybeLogPositionalBuilder
+
+    def build(self) -> BaseEmbedding:
+        return LogPositionalEmbedding(
+            feature_name = self.feature_name,
+            log_positional = self.log_positional,
+        )
