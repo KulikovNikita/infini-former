@@ -60,6 +60,9 @@ class LogPositional(torch.nn.Module):
 
         return result
     
+    def decode(self, embeddings: FPTensor) -> FPTensor:
+        pass
+    
 @dataclasses.dataclass
 class LogPositionalBuilder(BaseBuilder[LogPositional]):
     digits: int
