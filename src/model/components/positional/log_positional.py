@@ -1,8 +1,10 @@
 import torch
 
-import typing
-
 import dataclasses
+
+import rootutils
+
+rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.model.utils.typing import IndexTensor, FPTensor
 from src.model.utils.builders import BaseBuilder, MaybeBuilder
@@ -26,10 +28,10 @@ class LogPositional(torch.nn.Module):
         digits_range = torch.arange(0, digits, dtype = torch.int32)
 
         if base == 2.0:
-            powers = torch.exp2(digits_range)
+            powers = torch.exp2(-digits_range)
         else:
             base_tensor = torch.Tensor(base, dtype = dtype)
-            powers = torch.pow(base_tensor, digits_range)
+            powers = torch.pow(base_tensor, -digits_range)
         powers = powers.to(dtype)
 
         assert len(powers) == digits
