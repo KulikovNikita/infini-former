@@ -15,7 +15,11 @@ from src.model.components.positional.log_positional import (
 )
 
 class LogPositionalEmbedding(BaseEmbedding):
+<<<<<<< HEAD
     Batch = typing.Mapping[str, torch.Tensor]
+=======
+    Batch = typing.Dict[str, torch.Tensor]
+>>>>>>> 927a5a1 (Minor)
     def __init__(self, 
                  feature_name: str,
                  log_positional: MaybeLogPositionalBuilder) -> None:
