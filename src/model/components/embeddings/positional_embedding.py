@@ -15,11 +15,7 @@ from src.model.components.positional.log_positional import (
 )
 
 class LogPositionalEmbedding(BaseEmbedding):
-<<<<<<< HEAD
     Batch = typing.Mapping[str, torch.Tensor]
-=======
-    Batch = typing.Dict[str, torch.Tensor]
->>>>>>> 927a5a1 (Minor)
     def __init__(self, 
                  feature_name: str,
                  log_positional: MaybeLogPositionalBuilder) -> None:
@@ -48,8 +44,11 @@ class LogPositionalEmbedding(BaseEmbedding):
     def _forward(self, batch: Batch, offset: int) -> FPTensor:
         indices: IndexTensor = batch[self.feature_name]
         result = self.forward_indicess(indices)
-        self.__validate_output(result)
+        self._validate_output(result)
         return result
+    
+    def decode(self, embeddings: FPTensor) -> FPTensor:
+        return self.log_positional.decode(embeddings)
 
 @dataclasses.dataclass
 class LogPositionalEmbeddingBuilder(BaseBuilder[BaseEmbedding]):

@@ -19,7 +19,7 @@ class BaseEmbedding(torch.nn.Module):
     def embedding_dim(self) -> int:
         return self.__embedding_dim
 
-    def __validate_output(self, output: FPTensor) -> None:
+    def _validate_output(self, output: FPTensor) -> None:
         _, _, embedding_dim = output.size()
         assert embedding_dim == self.embedding_dim
 
@@ -29,7 +29,7 @@ class BaseEmbedding(torch.nn.Module):
 
     def forward(self, batch: Batch, offset: int = 0) -> FPTensor:
         output: FPTensor = self._forward(batch, offset)
-        self.__validate_output(output)
+        self._validate_output(output)
         return output
 
 MaybeEmbeddingBuilder = MaybeBuilder[BaseEmbedding]

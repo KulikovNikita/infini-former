@@ -67,8 +67,8 @@ class MergedEmbedding(BaseEmbedding):
     
     def _forward(self, batch: Batch, offset: int) -> FPTensor:
         slices_list = self.forward_to_list(batch)
-        result: FPTensor = torch.cat(slices_list, dim = -1)
-        assert result.size(-1) == self.embedding_dim
+        result = torch.cat(slices_list, dim = -1)
+        self._validate_output(result)
         return result
     
 @dataclasses.dataclass
